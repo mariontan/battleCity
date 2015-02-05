@@ -94,6 +94,28 @@ class LTimer
 		bool mStarted;
 };
 
+class Bullet
+{
+	 public:
+		//The dimensions of the dot
+		static const int BULLET_WIDTH = 20;
+		static const int BULLET_HEIGHT = 20;
+
+		//Maximum axis velocity of the dot
+		static const int BULLET_VEL = 10;
+
+		Bullet(int x, int y);
+
+		void shoot();
+
+		void render();
+	private:
+
+		int bulPosX, bulPosY;
+
+
+};
+
 //The dot that will move around on the screen
 class Dot
 {
@@ -111,10 +133,10 @@ class Dot
 		//Takes key presses and adjusts the dot's velocity
 
 		//Player 1
-		void handleEventP1( SDL_Event& e );
+		void handleEventP1( SDL_Event& e, Bullet b );
 
         //Player 2
-        void handleEventP2( SDL_Event& e );
+        void handleEventP2( SDL_Event& e, Bullet b );
 
 		//Moves the dot
 		void move(Circle& other);
@@ -139,27 +161,7 @@ class Dot
 		Circle mCollider;
 };
 
-class Bullet
-{
-	 public:
-		//The dimensions of the dot
-		static const int BULLET_WIDTH = 20;
-		static const int BULLET_HEIGHT = 20;
 
-		//Maximum axis velocity of the dot
-		static const int BULLET_VEL = 10;
-
-		Bullet(int x, int y);
-
-		void shoot();
-
-		void render();
-	private:
-
-		int bulPosX, bulPosY;
-
-
-};
 
 //Starts up SDL and creates window
 bool init();
@@ -205,7 +207,7 @@ bool LTexture::loadFromFile( std::string path )
 	SDL_Texture* newTexture = NULL;
 
 	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load( "Images/dot.bmp" );
+	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
 	if( loadedSurface == NULL )
 	{
 		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
@@ -352,7 +354,7 @@ Bullet::Bullet(int x, int y)
     bulPosY = y;
 }
 
-void Dot::handleEventP1( SDL_Event& e )
+void Dot::handleEventP1( SDL_Event& e, Bullet b )
 {
     //If a key was pressed
 	if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
@@ -364,6 +366,7 @@ void Dot::handleEventP1( SDL_Event& e )
             case SDLK_DOWN: mVelY += DOT_VEL; break;
             case SDLK_LEFT: mVelX -= DOT_VEL; break;
             case SDLK_RIGHT: mVelX += DOT_VEL; break;
+            case SDLK_RSHIFT:b.shoot(); break;
         }
     }
     //If a key was released
@@ -380,7 +383,7 @@ void Dot::handleEventP1( SDL_Event& e )
     }
 }
 
-void Dot::handleEventP2( SDL_Event& e )
+void Dot::handleEventP2( SDL_Event& e, Bullet b )
 {
     //If a key was pressed
 	if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
@@ -392,6 +395,7 @@ void Dot::handleEventP2( SDL_Event& e )
             case SDLK_s: mVelY += DOT_VEL; break;
             case SDLK_a: mVelX -= DOT_VEL; break;
             case SDLK_d: mVelX += DOT_VEL; break;
+            case SDLK_q: b.shoot(); break;
         }
     }
     //If a key was released
@@ -450,6 +454,10 @@ void Dot::move(Circle& other)
         mPosY -= mVelY;
         shiftColliders();
     }
+}
+
+void Bullet::shoot(){
+
 }
 
 void Dot::render()
@@ -524,13 +532,13 @@ bool loadMedia()
 	bool success = true;
 
 	//Load dot texture
-	if( !gDotTexture.loadFromFile( "26_motion/dot.bmp" ) )
+	if( !gDotTexture.loadFromFile( "Images/dot.bmp" ) )
 	{
 		printf( "Failed to load dot texture!\n" );
 		success = false;
 	}
 
-    if( !gBulletTexture.loadFromFile( "26_motion/dot.bmp" ) )
+    if( !gBulletTexture.loadFromFile( "Images/bullet.bmp" ) )
 	{
 		printf( "Failed to load dot texture!\n" );
 		success = false;
@@ -543,6 +551,7 @@ void close()
 {
 	//Free loaded images
 	gDotTexture.free();
+	gBulletTexture.free();
 
 	//Destroy window
 	SDL_DestroyRenderer( gRenderer );
@@ -577,9 +586,12 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 
+
 			//The dot that will be moving around on the screen
 			Dot dot(SCREEN_WIDTH/2,10);
 			Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
+
+			Bullet bul(50,50);
 
 			//While application is running
 			while( !quit )
@@ -594,8 +606,8 @@ int main( int argc, char* args[] )
 					}
 
 					//Handle input for the dot
-					dot.handleEventP1(e);
-					dot1.handleEventP2(e);
+					dot.handleEventP1(e,bul);
+					dot1.handleEventP2(e,bul);
 				}
 
 				//Move the dot
@@ -609,7 +621,8 @@ int main( int argc, char* args[] )
 				//Render objects
 				dot.render();
 				dot1.render();
-
+				//makes a colored dot
+                bul.render();
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 			}
