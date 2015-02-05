@@ -139,6 +139,28 @@ class Dot
 		Circle mCollider;
 };
 
+class Bullet
+{
+	 public:
+		//The dimensions of the dot
+		static const int BULLET_WIDTH = 20;
+		static const int BULLET_HEIGHT = 20;
+
+		//Maximum axis velocity of the dot
+		static const int BULLET_VEL = 10;
+
+		Bullet(int x, int y);
+
+		void shoot();
+
+		void render();
+	private:
+
+		int bulPosX, bulPosY;
+
+
+};
+
 //Starts up SDL and creates window
 bool init();
 
@@ -158,6 +180,7 @@ SDL_Renderer* gRenderer = NULL;
 
 //Scene textures
 LTexture gDotTexture;
+LTexture gBulletTexture;
 
 LTexture::LTexture()
 {
@@ -323,6 +346,12 @@ Dot::Dot(int x, int y)
     shiftColliders();
 }
 
+Bullet::Bullet(int x, int y)
+{
+	bulPosX = x;
+    bulPosY = y;
+}
+
 void Dot::handleEventP1( SDL_Event& e )
 {
     //If a key was pressed
@@ -429,6 +458,12 @@ void Dot::render()
 	gDotTexture.render( mPosX, mPosY );
 }
 
+void Bullet::render()
+{
+    //Show the Bullet
+	gBulletTexture.render( bulPosX, bulPosY );
+}
+
 bool init()
 {
 	//Initialization flag
@@ -495,6 +530,12 @@ bool loadMedia()
 		success = false;
 	}
 
+    if( !gBulletTexture.loadFromFile( "26_motion/dot.bmp" ) )
+	{
+		printf( "Failed to load dot texture!\n" );
+		success = false;
+	}
+
 	return success;
 }
 
@@ -537,8 +578,8 @@ int main( int argc, char* args[] )
 			SDL_Event e;
 
 			//The dot that will be moving around on the screen
-			Dot dot(0,0);
-			Dot dot1(100,100);
+			Dot dot(SCREEN_WIDTH/2,10);
+			Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
 
 			//While application is running
 			while( !quit )
