@@ -11,12 +11,6 @@ and may not be redistributed without written permission.*/
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-//circle struct
-struct Circle{
-    int x, y;
-    int r;
-};
-
 //Texture wrapper class
 class LTexture
 {
@@ -110,30 +104,25 @@ class Dot
 		Dot();
 
 		//Takes key presses and adjusts the dot's velocity
-		void handleEventKEY( SDL_Event& e );
+
+		//Player 1
+		void handleEventP1( SDL_Event& e );
+
+        //Player 2
+        void handleEventP2( SDL_Event& e );
 
 		//Moves the dot
-		void moveKEY(bool collide);
+		void move();
 
-        //Takes mouse input
-		void handleEventMOUSE( SDL_Event& e );
-
-		void moveMOUSE(bool collide);
 		//Shows the dot on the screen
 		void render();
 
-		Circle& getCollider();
-
-        void shiftColliders();
     private:
 		//The X and Y offsets of the dot
 		int mPosX, mPosY;
 
 		//The velocity of the dot
 		int mVelX, mVelY;
-
-		//the collider for the circle
-        Circle mCollider;
 };
 
 //Starts up SDL and creates window
@@ -144,8 +133,6 @@ bool loadMedia();
 
 //Frees media and shuts down SDL
 void close();
-
-bool checkCollision();
 
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
@@ -304,12 +291,6 @@ int LTexture::getHeight()
 	return mHeight;
 }
 
-bool checkCollision(Circle& c1, Circle& c2){
-    if(sqrt(pow(c1.x-c2.x, 2)+pow(c1.y-c2.y, 2)) < c1.r+c2.r){
-        return true;
-    }
-    return false;
-}
 
 Dot::Dot()
 {
@@ -320,66 +301,9 @@ Dot::Dot()
     //Initialize the velocity
     mVelX = 0;
     mVelY = 0;
-
-    //for the colliders
-    mCollider.x = mPosX;
-    mCollider.y = mPosY;
-    mCollider.r = DOT_WIDTH/2;
 }
 
-Circle& Dot::getCollider(){
-    return mCollider;
-}
-
-void Dot::shiftColliders(){
-	//Align collider to center of ball
-	mCollider.x = mPosX;
-	mCollider.y = mPosY;
-}
-void Dot::handleEventMOUSE( SDL_Event& e )
-{
-    //hide sthe cursor
-    SDL_ShowCursor(SDL_DISABLE);
-    if(e.type == SDL_MOUSEMOTION )
-    {
-     /*****gives the position of the mouse*****/
-        mPosX=e.motion.x;
-        shiftColliders();
-        mPosY=e.motion.y;
-        shiftColliders();
-
-         /*****prevents the ball from going out of the screen*****/
-        //If the ship went too far to the left or right
-        if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_WIDTH )  )
-        {
-            mPosX = 0;
-            mPosX = SCREEN_WIDTH-DOT_WIDTH;
-            shiftColliders();
-        }
-
-        //If the ship went too far up or down
-        if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_HEIGHT ) )
-        {
-            mPosY = 0;
-            mPosY = SCREEN_HEIGHT-DOT_HEIGHT;
-            shiftColliders();
-        }
-    }
-
-}
-
-void Dot::moveMOUSE(bool collide)
-{
-    //separate x and y
-    /*if(collide == true){
-        mPosX -= mPosX;
-        shiftColliders();
-        mPosY -= mPosY;
-        shiftColliders();
-    }*/
-}
-
-void Dot::handleEventKEY( SDL_Event& e )
+void Dot::handleEventP1( SDL_Event& e )
 {
     //If a key was pressed
 	if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
@@ -407,28 +331,54 @@ void Dot::handleEventKEY( SDL_Event& e )
     }
 }
 
-void Dot::moveKEY(bool collide)
+void Dot::handleEventP2( SDL_Event& e )
+{
+    //If a key was pressed
+	if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
+    {
+        //Adjust the velocity
+        switch( e.key.keysym.sym )
+        {
+            case SDLK_w: mVelY -= DOT_VEL; break;
+            case SDLK_s: mVelY += DOT_VEL; break;
+            case SDLK_a: mVelX -= DOT_VEL; break;
+            case SDLK_d: mVelX += DOT_VEL; break;
+        }
+    }
+    //If a key was released
+    else if( e.type == SDL_KEYUP && e.key.repeat == 0 )
+    {
+        //Adjust the velocity
+        switch( e.key.keysym.sym )
+        {
+            case SDLK_w: mVelY += DOT_VEL; break;
+            case SDLK_s: mVelY -= DOT_VEL; break;
+            case SDLK_a: mVelX += DOT_VEL; break;
+            case SDLK_d: mVelX -= DOT_VEL; break;
+        }
+    }
+}
+
+void Dot::move()
 {
     //Move the dot left or right
     mPosX += mVelX;
-    shiftColliders();
+
     //If the dot went too far to the left or right
-    if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_WIDTH ) || collide == true )
+    if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_WIDTH ) )
     {
         //Move back
         mPosX -= mVelX;
-        shiftColliders();
     }
 
     //Move the dot up or down
     mPosY += mVelY;
-    shiftColliders();
+
     //If the dot went too far up or down
-    if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_HEIGHT ) || collide == true )
+    if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_HEIGHT ) )
     {
         //Move back
         mPosY -= mVelY;
-        shiftColliders();
     }
 }
 
@@ -546,10 +496,7 @@ int main( int argc, char* args[] )
 			SDL_Event e;
 
 			//The dot that will be moving around on the screen
-			Dot dot,dot2;
-
-			//for colliding with each other
-			//bool hit = false;
+			Dot dot,dot1;
 
 			//While application is running
 			while( !quit )
@@ -564,30 +511,22 @@ int main( int argc, char* args[] )
 					}
 
 					//Handle input for the dot
-					dot.handleEventKEY( e );
-					dot2.handleEventMOUSE(e);
+					dot.handleEventP1(e);
+					dot1.handleEventP2(e);
 				}
 
 				//Move the dot
-				/*if(checkCollision(dot.getCollider(), dot2.getCollider())){
-                    dot.moveKEY(true);
-                    dot2.moveMOUSE(true);
-                }
-                else{
-                    dot.moveKEY(false);
-                    dot2.moveMOUSE(false);
-                }*/
-                dot.moveKEY(checkCollision(dot.getCollider(), dot2.getCollider()));
-                dot2.moveMOUSE(checkCollision(dot.getCollider(), dot2.getCollider()));
-                //dot.moveKEY(false);
-                //dot2.moveMOUSE(false);
+				dot.move();
+				dot1.move();
+
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
 
 				//Render objects
 				dot.render();
-                dot2.render();
+				dot1.render();
+
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 			}
