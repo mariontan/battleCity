@@ -11,6 +11,11 @@ and may not be redistributed without written permission.*/
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
+struct Circle{
+	int x, y;
+	int r;
+};
+
 //Texture wrapper class
 class LTexture
 {
@@ -101,7 +106,7 @@ class Dot
 		static const int DOT_VEL = 10;
 
 		//Initializes the variables
-		Dot();
+		Dot(int x, int y);
 
 		//Takes key presses and adjusts the dot's velocity
 
@@ -112,10 +117,16 @@ class Dot
         void handleEventP2( SDL_Event& e );
 
 		//Moves the dot
-		void move();
+		void move(Circle& other);
 
 		//Shows the dot on the screen
 		void render();
+
+		//Moves the collision circle relative to the ball's offset
+		void shiftColliders();
+
+		//Gets collision circle
+		Circle& getCollider();
 
     private:
 		//The X and Y offsets of the dot
@@ -123,6 +134,9 @@ class Dot
 
 		//The velocity of the dot
 		int mVelX, mVelY;
+
+		//Ball's collision circle
+		Circle mCollider;
 };
 
 //Starts up SDL and creates window
@@ -133,6 +147,8 @@ bool loadMedia();
 
 //Frees media and shuts down SDL
 void close();
+
+bool checkCollision(Circle&, Circle&);
 
 //The window we'll be rendering to
 SDL_Window* gWindow = NULL;
@@ -292,15 +308,19 @@ int LTexture::getHeight()
 }
 
 
-Dot::Dot()
+Dot::Dot(int x, int y)
 {
     //Initialize the offsets
-    mPosX = 0;
-    mPosY = 0;
+    mPosX = x;
+    mPosY = y;
 
     //Initialize the velocity
     mVelX = 0;
     mVelY = 0;
+
+    mCollider.r = DOT_WIDTH/ 2;
+
+    shiftColliders();
 }
 
 void Dot::handleEventP1( SDL_Event& e )
@@ -359,26 +379,47 @@ void Dot::handleEventP2( SDL_Event& e )
     }
 }
 
-void Dot::move()
+Circle& Dot::getCollider(){
+	return mCollider;
+}
+
+bool checkCollision(Circle& c1, Circle& c2){
+    if(sqrt(pow(c1.x-c2.x, 2)+pow(c1.y-c2.y, 2)) < c1.r+c2.r){
+        return true;
+    }
+    return false;
+}
+
+void Dot::shiftColliders(){
+	//Align collider to center of ball
+	mCollider.x = mPosX;
+	mCollider.y = mPosY;
+}
+
+void Dot::move(Circle& other)
 {
     //Move the dot left or right
     mPosX += mVelX;
+    shiftColliders();
 
     //If the dot went too far to the left or right
-    if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_WIDTH ) )
+    if( ( mPosX < 0 ) || ( mPosX + DOT_WIDTH > SCREEN_WIDTH ) || checkCollision(mCollider, other))
     {
         //Move back
         mPosX -= mVelX;
+        shiftColliders();
     }
 
     //Move the dot up or down
     mPosY += mVelY;
+    shiftColliders();
 
     //If the dot went too far up or down
-    if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_HEIGHT ) )
+    if( ( mPosY < 0 ) || ( mPosY + DOT_HEIGHT > SCREEN_HEIGHT ) ||checkCollision(mCollider, other) )
     {
         //Move back
         mPosY -= mVelY;
+        shiftColliders();
     }
 }
 
@@ -496,12 +537,13 @@ int main( int argc, char* args[] )
 			SDL_Event e;
 
 			//The dot that will be moving around on the screen
-			Dot dot,dot1;
+			Dot dot(0,0);
+			Dot dot1(100,100);
 
 			//While application is running
 			while( !quit )
 			{
-				//Handle events on queue
+				//Handle events on queue,to check the keystate of the keys
 				while( SDL_PollEvent( &e ) != 0 )
 				{
 					//User requests quit
@@ -516,8 +558,8 @@ int main( int argc, char* args[] )
 				}
 
 				//Move the dot
-				dot.move();
-				dot1.move();
+				dot.move(dot1.getCollider());
+				dot1.move(dot.getCollider());
 
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
