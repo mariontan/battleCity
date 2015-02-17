@@ -6,6 +6,7 @@ and may not be redistributed without written permission.*/
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
@@ -20,7 +21,7 @@ struct Circle{
 class LTexture
 {
 	public:
-		//Initializes variables
+		//Initializes vaables
 		LTexture();
 
 		//Deallocates memory
@@ -94,27 +95,7 @@ class LTimer
 		bool mStarted;
 };
 
-class Bullet
-{
-	 public:
-		//The dimensions of the dot
-		static const int BULLET_WIDTH = 20;
-		static const int BULLET_HEIGHT = 20;
 
-		//Maximum axis velocity of the dot
-		static const int BULLET_VEL = 10;
-
-		Bullet(int x, int y);
-
-		void shoot();
-
-		void render();
-	private:
-
-		int bulPosX, bulPosY;
-
-
-};
 
 //The dot that will move around on the screen
 class Dot
@@ -133,10 +114,10 @@ class Dot
 		//Takes key presses and adjusts the dot's velocity
 
 		//Player 1
-		void handleEventP1( SDL_Event& e, Bullet b );
+		void handleEventP1( SDL_Event& e);
 
         //Player 2
-        void handleEventP2( SDL_Event& e, Bullet b );
+        void handleEventP2( SDL_Event& e);
 
 		//Moves the dot
 		void move(Circle& other);
@@ -150,7 +131,7 @@ class Dot
 		//Gets collision circle
 		Circle& getCollider();
 
-    private:
+    //private:
 		//The X and Y offsets of the dot
 		int mPosX, mPosY;
 
@@ -161,7 +142,29 @@ class Dot
 		Circle mCollider;
 };
 
+class Bullet
+{
+	 public:
+		//The dimensions of the dot
+		static const int BULLET_WIDTH = 20;
+		static const int BULLET_HEIGHT = 20;
 
+		//Maximum axis velocity of the dot
+		static const int BULLET_VEL = 10;
+
+		Bullet();
+
+        void handleEvent(SDL_Event& e);
+
+		void shoot(Dot d);
+
+		void render();
+	private:
+
+		int bulPosX, bulPosY,bulVelX,bulVelY;
+
+
+};
 
 //Starts up SDL and creates window
 bool init();
@@ -348,13 +351,16 @@ Dot::Dot(int x, int y)
     shiftColliders();
 }
 
-Bullet::Bullet(int x, int y)
+Bullet::Bullet()
 {
-	bulPosX = x;
-    bulPosY = y;
+	//bulPosX = x;
+    //bulPosY = y;
+
+    bulVelX = 0;
+    bulVelY = 0;
 }
 
-void Dot::handleEventP1( SDL_Event& e, Bullet b )
+void Dot::handleEventP1( SDL_Event& e )
 {
     //If a key was pressed
 	if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
@@ -366,7 +372,6 @@ void Dot::handleEventP1( SDL_Event& e, Bullet b )
             case SDLK_DOWN: mVelY += DOT_VEL; break;
             case SDLK_LEFT: mVelX -= DOT_VEL; break;
             case SDLK_RIGHT: mVelX += DOT_VEL; break;
-            case SDLK_RSHIFT:b.shoot(); break;
         }
     }
     //If a key was released
@@ -383,7 +388,7 @@ void Dot::handleEventP1( SDL_Event& e, Bullet b )
     }
 }
 
-void Dot::handleEventP2( SDL_Event& e, Bullet b )
+void Dot::handleEventP2( SDL_Event& e)
 {
     //If a key was pressed
 	if( e.type == SDL_KEYDOWN && e.key.repeat == 0 )
@@ -395,7 +400,7 @@ void Dot::handleEventP2( SDL_Event& e, Bullet b )
             case SDLK_s: mVelY += DOT_VEL; break;
             case SDLK_a: mVelX -= DOT_VEL; break;
             case SDLK_d: mVelX += DOT_VEL; break;
-            case SDLK_q: b.shoot(); break;
+
         }
     }
     //If a key was released
@@ -409,6 +414,16 @@ void Dot::handleEventP2( SDL_Event& e, Bullet b )
             case SDLK_a: mVelX += DOT_VEL; break;
             case SDLK_d: mVelX -= DOT_VEL; break;
         }
+    }
+}
+
+void Bullet::handleEvent(SDL_Event& e){
+
+    if( (e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_q )
+    {
+        //Adjust the velocity when q is pressed
+        bulVelY +=10 ;
+
     }
 }
 
@@ -456,8 +471,13 @@ void Dot::move(Circle& other)
     }
 }
 
-void Bullet::shoot(){
+void Bullet::shoot(Dot d){
 
+    bulPosX = d.mPosX;
+    bulPosY = d.mPosY;
+
+    //bulPosX+=bulVelX;
+    bulPosY += bulVelY;
 }
 
 void Dot::render()
@@ -563,7 +583,7 @@ void close()
 	IMG_Quit();
 	SDL_Quit();
 }
-
+//http://gamedev.stackexchange.com/questions/22616/sdl-bullet-movement
 int main( int argc, char* args[] )
 {
 	//Start up SDL and create window
@@ -590,12 +610,20 @@ int main( int argc, char* args[] )
 			//The dot that will be moving around on the screen
 			Dot dot(SCREEN_WIDTH/2,10);
 			Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
+            std::vector<Bullet> vecBul;
 
-			Bullet bul(50,50);
+
+            for(int i =0; i<10; i++){
+                 Bullet bul;
+                 vecBul.push_back(bul);
+            }
+
+            int i = 0;
 
 			//While application is running
 			while( !quit )
 			{
+
 				//Handle events on queue,to check the keystate of the keys
 				while( SDL_PollEvent( &e ) != 0 )
 				{
@@ -605,24 +633,27 @@ int main( int argc, char* args[] )
 						quit = true;
 					}
 
-					//Handle input for the dot
-					dot.handleEventP1(e,bul);
-					dot1.handleEventP2(e,bul);
+     				//Handle input for the dot
+					dot.handleEventP1(e);
+					dot1.handleEventP2(e);
+					for(int i = 0; i<10; i++){
+                        vecBul[i].handleEvent(e);
+					}
+
 				}
 
 				//Move the dot
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
-
+                vecBul[0].shoot(dot);
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
-
 				//Render objects
 				dot.render();
 				dot1.render();
 				//makes a colored dot
-                bul.render();
+                vecBul[0].render();
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 			}
