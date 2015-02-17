@@ -141,7 +141,7 @@ class Dot
 		//Ball's collision circle
 		Circle mCollider;
 };
-
+bool createBul = false;
 class Bullet
 {
 	 public:
@@ -152,11 +152,12 @@ class Bullet
 		//Maximum axis velocity of the dot
 		static const int BULLET_VEL = 10;
 
-		Bullet();
+
+		Bullet(Dot d);
 
         void handleEvent(SDL_Event& e);
 
-		void shoot(Dot d);
+		void shoot(bool bul);
 
 		void render();
 	private:
@@ -165,6 +166,12 @@ class Bullet
 
 
 };
+
+//The dot that will be moving around on the screen
+Dot dot(SCREEN_WIDTH/2,10);
+Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
+std::vector<Bullet> vecBul;
+
 
 //Starts up SDL and creates window
 bool init();
@@ -351,10 +358,10 @@ Dot::Dot(int x, int y)
     shiftColliders();
 }
 
-Bullet::Bullet()
+Bullet::Bullet(Dot d)
 {
-	//bulPosX = x;
-    //bulPosY = y;
+    bulPosX = d.mPosX;
+    bulPosY = d.mPosY;
 
     bulVelX = 0;
     bulVelY = 0;
@@ -421,8 +428,9 @@ void Bullet::handleEvent(SDL_Event& e){
 
     if( (e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_q )
     {
+        createBul = true;
         //Adjust the velocity when q is pressed
-        bulVelY +=10 ;
+        //bulVelY +=10 ;
 
     }
 }
@@ -470,14 +478,12 @@ void Dot::move(Circle& other)
         shiftColliders();
     }
 }
+//like the move of the dot class
+void Bullet::shoot(bool bullet){
+    if(bullet == true){
+        bulPosY = bulPosY + 10;
+    }
 
-void Bullet::shoot(Dot d){
-
-    bulPosX = d.mPosX;
-    bulPosY = d.mPosY;
-
-    //bulPosX+=bulVelX;
-    bulPosY += bulVelY;
 }
 
 void Dot::render()
@@ -606,18 +612,10 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 
-
-			//The dot that will be moving around on the screen
-			Dot dot(SCREEN_WIDTH/2,10);
-			Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
-            std::vector<Bullet> vecBul;
-
-
-            for(int i =0; i<10; i++){
-                 Bullet bul;
+            for(int i =0; i<1000; i++){
+                 Bullet bul(dot);
                  vecBul.push_back(bul);
             }
-
             int i = 0;
 
 			//While application is running
@@ -638,14 +636,21 @@ int main( int argc, char* args[] )
 					dot1.handleEventP2(e);
 					for(int i = 0; i<10; i++){
                         vecBul[i].handleEvent(e);
-					}
-
+                    }
+                    if(createBul == true)
+                    {
+                        i++;
+                    }
 				}
 
+                if(i == 5){
+                    i=0;
+                }
 				//Move the dot
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
-                vecBul[0].shoot(dot);
+                vecBul[i].shoot(createBul);
+
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
@@ -653,7 +658,7 @@ int main( int argc, char* args[] )
 				dot.render();
 				dot1.render();
 				//makes a colored dot
-                vecBul[0].render();
+                vecBul[i].render();
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 			}
