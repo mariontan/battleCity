@@ -141,7 +141,9 @@ class Dot
 		//Ball's collision circle
 		Circle mCollider;
 };
+//variables for shooting the bullet
 bool createBul = false;
+bool createBul2 = false;
 class Bullet
 {
 	 public:
@@ -157,7 +159,7 @@ class Bullet
 
         void handleEvent(SDL_Event& e);
 
-        void shoot(bool bul, Dot d);
+        void shoot(bool bul, Dot d,int vel);
 
         void setCreateBul(Dot d);
 
@@ -169,10 +171,6 @@ class Bullet
 };
 
 //The dot that will be moving around on the screen
-/*Dot dot(SCREEN_WIDTH/2,10);
-Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
-std::vector<Bullet> vecBul;*/
-
 
 //Starts up SDL and creates window
 bool init();
@@ -425,9 +423,13 @@ void Dot::handleEventP2( SDL_Event& e)
 
 void Bullet::handleEvent(SDL_Event& e){
     //shoots a bullet when q is pressed
-    if( (e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_q )
+    if((e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_RSHIFT )
     {
         createBul = true;
+    }
+    if((e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_q )
+    {
+        createBul2 = true;
     }
 }
 
@@ -475,7 +477,7 @@ void Dot::move(Circle& other)
     }
 }
 
-void Bullet::shoot(bool shoot,Dot d){
+void Bullet::shoot(bool shoot,Dot d,int vel){
     //follows the dot
     if(shoot == false){
         bulPosX = d.mPosX;
@@ -484,18 +486,24 @@ void Bullet::shoot(bool shoot,Dot d){
     //the actual shooting
     else if(shoot == true){
         bulPosX = d.mPosX;
-        bulPosY = bulPosY + 10;
+        bulPosY = bulPosY + vel;
     }
 }
 
-//sets createBul to false after bullet has exited the screen
+//sets createBul to false amd moves the bullet back to the dot after bullet has exited the screen
 void Bullet::setCreateBul(Dot d){
-    if( ( bulPosY < 0 ) || ( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT ) )
+    if( ( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT ) )
     {
         //Move back to bullet position
         bulPosY = d.mPosY;
         bulPosX = d.mPosX;
         createBul = false;
+    }
+    if(( bulPosY < 0 )  )
+    {
+        bulPosY = d.mPosY;
+        bulPosX = d.mPosX;
+        createBul2 = false;
     }
 }
 
@@ -602,6 +610,7 @@ void close()
 	SDL_Quit();
 }
 //http://gamedev.stackexchange.com/questions/22616/sdl-bullet-movement
+/***split the controls for bullet one and bullet two***/
 int main( int argc, char* args[] )
 {
 	//Start up SDL and create window
@@ -628,12 +637,15 @@ int main( int argc, char* args[] )
 			Dot dot(SCREEN_WIDTH/2,10);
             Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
             std::vector<Bullet> vecBul;
-
+            std::vector<Bullet> vecBul2;
+            //counter for bullet
+            int i = 0;
             for(int i =0; i<10; i++){
                  Bullet bul(dot);
                  vecBul.push_back(bul);
+                 vecBul2.push_back(bul);
             }
-            int i = 0;
+
 
 			//While application is running
 			while( !quit )
@@ -652,6 +664,7 @@ int main( int argc, char* args[] )
 					dot1.handleEventP2(e);
 					for(int i = 0; i<10; i++){
                         vecBul[i].handleEvent(e);
+                        vecBul2[i].handleEvent(e);
                     }
                     if(createBul == true)
                     {
@@ -665,12 +678,21 @@ int main( int argc, char* args[] )
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
 
-				//vecBul[i].moveBul(dot);
-                vecBul[i].shoot(createBul,dot);
+
+                vecBul[i].shoot(createBul,dot,10);
+
+                vecBul2[i].shoot(createBul2,dot1,-10);
 
                 //sets createBul to false after bullet has exited the screen
                 vecBul[i].setCreateBul(dot);
-
+                vecBul2[i].setCreateBul(dot1);
+                /*if( ( bulPosY < 0 ) || ( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT ) )
+                {
+                    //Move back to bullet position
+                    bulPosY = d.mPosY;
+                    bulPosX = d.mPosX;
+                    createBul = false;
+                }*/
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
@@ -679,6 +701,8 @@ int main( int argc, char* args[] )
 				dot1.render();
 				//makes a colored dot
                 vecBul[i].render();
+
+                vecBul2[i].render();
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 			}
