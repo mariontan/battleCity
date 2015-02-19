@@ -157,9 +157,9 @@ class Bullet
 
         void handleEvent(SDL_Event& e);
 
-        void moveBul(Dot d);
+        void shoot(bool bul, Dot d);
 
-		void shoot(bool bul, Dot d);
+        void setCreateBul(Dot d);
 
 		void render();
 
@@ -169,9 +169,9 @@ class Bullet
 };
 
 //The dot that will be moving around on the screen
-Dot dot(SCREEN_WIDTH/2,10);
+/*Dot dot(SCREEN_WIDTH/2,10);
 Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
-std::vector<Bullet> vecBul;
+std::vector<Bullet> vecBul;*/
 
 
 //Starts up SDL and creates window
@@ -424,12 +424,10 @@ void Dot::handleEventP2( SDL_Event& e)
 }
 
 void Bullet::handleEvent(SDL_Event& e){
-
+    //shoots a bullet when q is pressed
     if( (e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_q )
     {
         createBul = true;
-        //Adjust the velocity when q is pressed
-        //bulVelY +=10 ;
     }
 }
 
@@ -448,12 +446,6 @@ void Dot::shiftColliders(){
 	//Align collider to center of ball
 	mCollider.x = mPosX;
 	mCollider.y = mPosY;
-}
-
-//sets the bullet position to whatever is the position of the dot
-void Bullet::moveBul(Dot d){
-    bulPosX = d.mPosX;
-    bulPosY = d.mPosY;
 }
 
 void Dot::move(Circle& other)
@@ -482,14 +474,28 @@ void Dot::move(Circle& other)
         shiftColliders();
     }
 }
-//like the move of the dot class
+
 void Bullet::shoot(bool shoot,Dot d){
+    //follows the dot
     if(shoot == false){
         bulPosX = d.mPosX;
         bulPosY = d.mPosY;
     }
+    //the actual shooting
     else if(shoot == true){
+        bulPosX = d.mPosX;
         bulPosY = bulPosY + 10;
+    }
+}
+
+//sets createBul to false after bullet has exited the screen
+void Bullet::setCreateBul(Dot d){
+    if( ( bulPosY < 0 ) || ( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT ) )
+    {
+        //Move back to bullet position
+        bulPosY = d.mPosY;
+        bulPosX = d.mPosX;
+        createBul = false;
     }
 }
 
@@ -618,6 +624,11 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 
+			//dots and bullets on the screen
+			Dot dot(SCREEN_WIDTH/2,10);
+            Dot dot1(SCREEN_WIDTH/2,SCREEN_HEIGHT-dot1.DOT_HEIGHT-10);
+            std::vector<Bullet> vecBul;
+
             for(int i =0; i<10; i++){
                  Bullet bul(dot);
                  vecBul.push_back(bul);
@@ -650,8 +661,6 @@ int main( int argc, char* args[] )
                         i=0;
                     }
 				}
-
-
 				//Move the dot
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
@@ -660,12 +669,8 @@ int main( int argc, char* args[] )
                 vecBul[i].shoot(createBul,dot);
 
                 //sets createBul to false after bullet has exited the screen
-                if( ( vecBul[i].bulPosY < 0 ) || ( vecBul[i].bulPosY + vecBul[i].BULLET_HEIGHT > SCREEN_HEIGHT ) )
-                {
-                    //Move back to top of screen
-                    vecBul[i].bulPosY = dot.mPosY;
-                    createBul = false;
-                }
+                vecBul[i].setCreateBul(dot);
+
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
@@ -679,7 +684,6 @@ int main( int argc, char* args[] )
 			}
 		}
 	}
-
 	//Free resources and close SDL
 	close();
 
