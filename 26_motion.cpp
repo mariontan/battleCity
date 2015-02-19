@@ -144,6 +144,9 @@ class Dot
 //variables for shooting the bullet
 bool createBul = false;
 bool createBul2 = false;
+
+//2=shoot in front 1=shoot left 3=shoot right
+int shootDir = 2;
 class Bullet
 {
 	 public:
@@ -159,9 +162,9 @@ class Bullet
 
         void handleEvent(SDL_Event& e);
 
-        void shoot(bool bul, Dot d,int vel);
+        void shoot(bool bul, Dot d,int vel,int playerID);
 
-        void setCreateBul(Dot d);
+        void setCreateBul(Dot d,int playerID);
 
 		void render();
 
@@ -373,10 +376,22 @@ void Dot::handleEventP1( SDL_Event& e )
         //Adjust the velocity
         switch( e.key.keysym.sym )
         {
-            case SDLK_UP: mVelY -= DOT_VEL; break;
-            case SDLK_DOWN: mVelY += DOT_VEL; break;
-            case SDLK_LEFT: mVelX -= DOT_VEL; break;
-            case SDLK_RIGHT: mVelX += DOT_VEL; break;
+            case SDLK_UP:
+                mVelY -= DOT_VEL;
+                shootDir = 2;
+                break;
+            case SDLK_DOWN:
+                mVelY += DOT_VEL;
+                shootDir = 2;
+                break;
+            case SDLK_LEFT:
+                mVelX -= DOT_VEL;
+                shootDir = 1;
+                break;
+            case SDLK_RIGHT:
+                mVelX += DOT_VEL;
+                shootDir = 3;
+                break;
         }
     }
     //If a key was released
@@ -413,21 +428,34 @@ void Dot::handleEventP2( SDL_Event& e)
         //Adjust the velocity
         switch( e.key.keysym.sym )
         {
-            case SDLK_w: mVelY += DOT_VEL; break;
-            case SDLK_s: mVelY -= DOT_VEL; break;
-            case SDLK_a: mVelX += DOT_VEL; break;
-            case SDLK_d: mVelX -= DOT_VEL; break;
+            case SDLK_w:
+                mVelY += DOT_VEL;
+                shootDir = 2;
+                break;
+            case SDLK_s:
+                mVelY -= DOT_VEL;
+                shootDir = 2;
+                break;
+            case SDLK_a:
+                mVelX += DOT_VEL;
+                shootDir = 4;
+                break;
+            case SDLK_d:
+                mVelX -= DOT_VEL;
+                shootDir = 6;
+                break;
         }
     }
 }
 
 void Bullet::handleEvent(SDL_Event& e){
-    //shoots a bullet when q is pressed
-    if((e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_RSHIFT )
+    //shoots a bullet when right shift is pressed
+    if((e.type == SDL_KEYDOWN && e.key.repeat == 0) && e.key.keysym.sym == SDLK_RSHIFT)
     {
         createBul = true;
     }
-    if((e.type == SDL_KEYDOWN && e.key.repeat == 0)&& e.key.keysym.sym == SDLK_q )
+    //shoots a bullet when q is pressed
+    if((e.type == SDL_KEYDOWN && e.key.repeat == 0) && e.key.keysym.sym == SDLK_q)
     {
         createBul2 = true;
     }
@@ -477,29 +505,65 @@ void Dot::move(Circle& other)
     }
 }
 
-void Bullet::shoot(bool shoot,Dot d,int vel){
+void Bullet::shoot(bool shoot,Dot d,int vel,int playerID){
     //follows the dot
     if(shoot == false){
         bulPosX = d.mPosX;
         bulPosY = d.mPosY;
     }
     //the actual shooting
-    else if(shoot == true){
+
+    if(playerID == 1)
+    {
+        if(shoot == true && shootDir == 1)//left
+        {
+            bulPosX = bulPosX -10;
+            bulPosY = d.mPosY;
+        }
+        else if(shoot == true && shootDir == 3)//right
+        {
+            bulPosX = bulPosX +10;
+            bulPosY = d.mPosY;
+        }
+        else if(shoot == true && shootDir == 2)//p1 shoot down p2 shoot up
+        {
         bulPosX = d.mPosX;
         bulPosY = bulPosY + vel;
+        }
     }
+    else if(playerID == 2)
+    {
+        if(shoot == true && shootDir == 4)//left
+        {
+            bulPosX = bulPosX -10;
+            bulPosY = d.mPosY;
+        }
+        else if(shoot == true && shootDir == 6)//right
+        {
+            bulPosX = bulPosX +10;
+            bulPosY = d.mPosY;
+        }
+        else if(shoot == true && shootDir == 2)//p1 shoot down p2 shoot up
+        {
+        bulPosX = d.mPosX;
+        bulPosY = bulPosY + vel;
+        }
+    }
+
 }
 
 //sets createBul to false amd moves the bullet back to the dot after bullet has exited the screen
-void Bullet::setCreateBul(Dot d){
-    if( ( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT ) )
+void Bullet::setCreateBul(Dot d,int playerID){
+    //bullet one
+    if( (( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT )||( bulPosX < 0 ) || ( bulPosX + BULLET_WIDTH > SCREEN_WIDTH )) && playerID == 1 )
     {
         //Move back to bullet position
         bulPosY = d.mPosY;
         bulPosX = d.mPosX;
         createBul = false;
     }
-    if(( bulPosY < 0 )  )
+    //bullet two
+    if((( bulPosY < 0 )||( bulPosX < 0 ) || ( bulPosX + BULLET_WIDTH > SCREEN_WIDTH )) && playerID == 2 )
     {
         bulPosY = d.mPosY;
         bulPosX = d.mPosX;
@@ -678,31 +742,25 @@ int main( int argc, char* args[] )
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
 
-
-                vecBul[i].shoot(createBul,dot,10);
-
-                vecBul2[i].shoot(createBul2,dot1,-10);
+                //shoots the bullets
+                vecBul[i].shoot(createBul,dot,10,1);
+                vecBul2[i].shoot(createBul2,dot1,-10,2);
 
                 //sets createBul to false after bullet has exited the screen
-                vecBul[i].setCreateBul(dot);
-                vecBul2[i].setCreateBul(dot1);
-                /*if( ( bulPosY < 0 ) || ( bulPosY + BULLET_HEIGHT > SCREEN_HEIGHT ) )
-                {
-                    //Move back to bullet position
-                    bulPosY = d.mPosY;
-                    bulPosX = d.mPosX;
-                    createBul = false;
-                }*/
+                vecBul[i].setCreateBul(dot,1);
+                vecBul2[i].setCreateBul(dot1,2);
+
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
-				//Render objects
+
+				/**Render objects**/
 				dot.render();
 				dot1.render();
-				//makes a colored dot
+				//makes a bullet
                 vecBul[i].render();
-
                 vecBul2[i].render();
+
 				//Update screen
 				SDL_RenderPresent( gRenderer );
 			}
