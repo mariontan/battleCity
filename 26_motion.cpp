@@ -157,7 +157,9 @@ class Bullet
 
         void handleEvent(SDL_Event& e);
 
-		void shoot(bool bul);
+        void moveBul(Dot d);
+
+		void shoot(bool bul, Dot d);
 
 		void render();
 
@@ -448,6 +450,12 @@ void Dot::shiftColliders(){
 	mCollider.y = mPosY;
 }
 
+//sets the bullet position to whatever is the position of the dot
+void Bullet::moveBul(Dot d){
+    bulPosX = d.mPosX;
+    bulPosY = d.mPosY;
+}
+
 void Dot::move(Circle& other)
 {
     //Move the dot left or right
@@ -475,8 +483,12 @@ void Dot::move(Circle& other)
     }
 }
 //like the move of the dot class
-void Bullet::shoot(bool shoot){
-    if(shoot == true){
+void Bullet::shoot(bool shoot,Dot d){
+    if(shoot == false){
+        bulPosX = d.mPosX;
+        bulPosY = d.mPosY;
+    }
+    else if(shoot == true){
         bulPosY = bulPosY + 10;
     }
 }
@@ -643,12 +655,15 @@ int main( int argc, char* args[] )
 				//Move the dot
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
-                vecBul[i].shoot(createBul);
+
+				//vecBul[i].moveBul(dot);
+                vecBul[i].shoot(createBul,dot);
+
                 //sets createBul to false after bullet has exited the screen
                 if( ( vecBul[i].bulPosY < 0 ) || ( vecBul[i].bulPosY + vecBul[i].BULLET_HEIGHT > SCREEN_HEIGHT ) )
                 {
                     //Move back to top of screen
-                    vecBul[i].bulPosY = 0;
+                    vecBul[i].bulPosY = dot.mPosY;
                     createBul = false;
                 }
 				//Clear screen
