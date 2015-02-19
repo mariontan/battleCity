@@ -160,7 +160,6 @@ class Bullet
 		void shoot(bool bul);
 
 		void render();
-	private:
 
 		int bulPosX, bulPosY,bulVelX,bulVelY;
 
@@ -348,7 +347,6 @@ Dot::Dot(int x, int y)
     //Initialize the offsets
     mPosX = x;
     mPosY = y;
-
     //Initialize the velocity
     mVelX = 0;
     mVelY = 0;
@@ -407,7 +405,6 @@ void Dot::handleEventP2( SDL_Event& e)
             case SDLK_s: mVelY += DOT_VEL; break;
             case SDLK_a: mVelX -= DOT_VEL; break;
             case SDLK_d: mVelX += DOT_VEL; break;
-
         }
     }
     //If a key was released
@@ -431,7 +428,6 @@ void Bullet::handleEvent(SDL_Event& e){
         createBul = true;
         //Adjust the velocity when q is pressed
         //bulVelY +=10 ;
-
     }
 }
 
@@ -479,11 +475,10 @@ void Dot::move(Circle& other)
     }
 }
 //like the move of the dot class
-void Bullet::shoot(bool bullet){
-    if(bullet == true){
+void Bullet::shoot(bool shoot){
+    if(shoot == true){
         bulPosY = bulPosY + 10;
     }
-
 }
 
 void Dot::render()
@@ -548,7 +543,6 @@ bool init()
 			}
 		}
 	}
-
 	return success;
 }
 
@@ -612,7 +606,7 @@ int main( int argc, char* args[] )
 			//Event handler
 			SDL_Event e;
 
-            for(int i =0; i<1000; i++){
+            for(int i =0; i<10; i++){
                  Bullet bul(dot);
                  vecBul.push_back(bul);
             }
@@ -630,7 +624,6 @@ int main( int argc, char* args[] )
 					{
 						quit = true;
 					}
-
      				//Handle input for the dot
 					dot.handleEventP1(e);
 					dot1.handleEventP2(e);
@@ -641,16 +634,23 @@ int main( int argc, char* args[] )
                     {
                         i++;
                     }
+                    if(i == 5){
+                        i=0;
+                    }
 				}
 
-                if(i == 5){
-                    i=0;
-                }
+
 				//Move the dot
 				dot.move(dot1.getCollider());
 				dot1.move(dot.getCollider());
                 vecBul[i].shoot(createBul);
-
+                //sets createBul to false after bullet has exited the screen
+                if( ( vecBul[i].bulPosY < 0 ) || ( vecBul[i].bulPosY + vecBul[i].BULLET_HEIGHT > SCREEN_HEIGHT ) )
+                {
+                    //Move back to top of screen
+                    vecBul[i].bulPosY = 0;
+                    createBul = false;
+                }
 				//Clear screen
 				SDL_SetRenderDrawColor( gRenderer, 0xFF, 0xFF, 0xFF, 0xFF );
 				SDL_RenderClear( gRenderer );
